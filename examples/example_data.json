@@ -11,8 +11,8 @@
 		"totalMonetizedTimeSpent": 194719204821,
 		"totalVisits": 500,
 		"totalMonetizedVisits": 30,
-		"topOriginsList": [
-			{
+		"topOriginsMap": {
+			"1": {
 				"origin":"https://sdog.netlify.app",
 				"isCurrentlyMonetized":true,
 				"originVisitData":{
@@ -34,7 +34,7 @@
 					}
 				}
 			},
-			{
+			"2": {
 				"origin":"https://dev.to",
 				"isCurrentlyMonetized":true,
 				"originVisitData":{
@@ -56,9 +56,9 @@
 					}
 				}
 			}
-		],
-		"needsSomeLoveList": [
-			{
+		},
+		"needsSomeLoveMap": {
+			"1": {
 				"origin":"https://www.twitch.tv",
 				"isCurrentlyMonetized":true,
 				"originVisitData":{
@@ -90,7 +90,7 @@
 					}
 				}
 			}
-		],
+		},
 		"totalSentAssetsMap": {
 			"XRP": {
 				"amount": 74289471,

@@ -114,7 +114,7 @@ function updateVisitData(originData, originStats) {
  */
 function updateTimeSpent(originData, originStats, recentTimeSpent = 0) {
 	originData.addTimeSpent(recentTimeSpent);
-	originStats.updateTimeSpent(recentTimeSpent, originData.isCurrentlyMonetized);
+	originStats.updateTimeSpent(recentTimeSpent, originData);
 }
 
 /***********************************************************
