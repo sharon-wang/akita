@@ -12,11 +12,11 @@ scriptEl.text = `
 		document.monetization.addEventListener('monetizationstart', (event) => {
 			document.dispatchEvent(new CustomEvent('akita_monetizationstart', { detail: event.detail }));
 		});
-	
+
 		document.monetization.addEventListener('monetizationprogress', (event) => {
 			document.dispatchEvent(new CustomEvent('akita_monetizationprogress', { detail: event.detail }));
 		});
-	
+
 		document.monetization.addEventListener('monetizationstop', (event) => {
 			document.dispatchEvent(new CustomEvent('akita_monetizationstop', { detail: event.detail }));
 		});
@@ -132,13 +132,13 @@ async function trackTimeOnSite() {
 	 */
 	setInterval(async () => {
 		const now = getCurrentTime();
-		
+
 		if (document.visibilityState === 'visible') {
 			if (docHiddenTime > previousStoreTime) {
 				// Adding time after visibility lost (document becomes hidden) and then gained (document is visible again)
 				// i.e. If the user navigates away from the site and then comes back
 				const timeFromPreviousStoreToDocHidden = docHiddenTime - previousStoreTime;
-				const timeSinceDocVisible = now - docVisibleTime;	
+				const timeSinceDocVisible = now - docVisibleTime;
 				await storeRecentTimeSpent(timeFromPreviousStoreToDocHidden + timeSinceDocVisible);
 			} else {
 				// Adding time during regular interval (document visible)
@@ -181,7 +181,7 @@ async function storeRecentTimeSpent(recentTimeSpent) {
  * TODO: use enum to indicate no meta tag, meta tag + valid endpoint,
  * meta tag + invalid endpoint.
  * 
- * @return {Promise<{ isPaymentPointerValid: boolean, paymentPointer:string}>} 
+ * @return {Promise<{ isPaymentPointerValid: boolean, paymentPointer:string}>}
  * isPaymentPointerValid is true if both monetization is present and the payment endpoint is valid.
  * paymentPointer is the paymentPointer if it is found in the monetization meta tag, otherwise null.
  */
@@ -212,17 +212,39 @@ async function getAndValidatePaymentPointer() {
  */
 async function isPaymentPointerValid(paymentPointer) {
 	let isPaymentPointerValid = false;
-	const resolvedPaymentPointer = resolvePaymentPointer(paymentPointer);
 
-	if (resolvedPaymentPointer) {
+	/**
+	 * A maximum of five redirections is the recommendation as per
+	 * https://www.ietf.org/rfc/rfc2616.txt
+	 */
+	let redirectCounter = 5;
+	let response = null;
+	let endpoint = null;
+	let paymentPointerCandidate = paymentPointer;
 
-		let response = await httpGet(resolvedPaymentPointer, "Accept", "application/spsp4+json, application/spsp+json");
+	while (redirectCounter > 0) {
+		endpoint = resolvePaymentPointer(paymentPointerCandidate);
 
-		if (response) {
-			const httpStatusOK = 200;
+		if (endpoint) {
+			response = await httpGet(endpoint, "Accept", "application/spsp4+json, application/spsp+json");
 
-			if (httpStatusOK === response.status) {
+			if (response.status === 200) {
+				/* HTTP Status OK */
 				isPaymentPointerValid = true;
+				break;
+			} else if ((response.status >= 300) && (response.status < 400)) {
+				/* HTTP Status Redirect */
+				// get redirect location from repsonse header
+				// reponse.headers
+				// cannot get location from client-side script
+				// https://stackoverflow.com/questions/42662571/client-side-how-do-i-get-the-location-header-of-any-website
+				// https://stackoverflow.com/questions/38927335/how-to-get-header-location-value-from-a-fetch-request-in-browser
+				paymentPointerCandidate = newlocation;
+				redirectCounter--;
+
+				// need to validate that the response body contains destination_account and shared_secret
+				// {"destination_account":"g.uphold.internalMultiChild.172-31-48-236.stream.Ghn5ESBkSHt4gHrZf6x4v1JiILma2vXHwQpLoiqwDoI.qoaOUISg2K7WWmxabcMCL4GDxwWRfnBAW34kXW_PI8X5rV8hYYRV43U-we0wwlCHPkRmZ-sDijYC8ojJJwWS7BEAxNGP57JYnzm5W5aDqek38OBLNsm5vS7xsiUYmATp7qc1pVcjEllHt0lzkG49_YdVWxBoFvhqcNO8",
+				// "shared_secret":"56ygfMJgR4DxpYwa6kCIcckprJOIV4en20pWPCp8E4w="}
 			}
 		}
 	}
@@ -304,7 +326,8 @@ async function httpGet(endpoint, headerName, headerValue) {
 
 		response = await fetch(endpoint, {
 			method: 'GET',
-			headers: requestHeaders
+			headers: requestHeaders,
+			redirect: 'manual' // Handle redirects manually since we want to validate the payment pointer
 		});
 	}
 
@@ -333,7 +356,7 @@ function getFaviconPath() {
 	let faviconPath = null;
 	let linkElementsList = document.getElementsByTagName("link");
 	let relIconFoundIndex = -1;
-	
+
 	// Check for a link with rel "icon" or "shortcut icon"
 	for (let i = 0; i < linkElementsList.length; i++) {
 		const linkElementRel = linkElementsList[i].getAttribute("rel");
@@ -356,6 +379,6 @@ function getFaviconPath() {
 		// An icon link was not found, set path to default
 		faviconPath = "favicon.ico";
 	}
-	
-	return faviconPath;		
+
+	return faviconPath;
 }
